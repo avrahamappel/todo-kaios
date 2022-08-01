@@ -1,8 +1,11 @@
 use gloo_utils::document;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
 use crate::hooks::use_navigation;
 
+#[derive(PartialEq)]
 struct Todo {
     name: String,
     completed: bool,
@@ -10,56 +13,62 @@ struct Todo {
 
 #[function_component(App)]
 pub fn app() -> Html {
-    let todos = use_state_eq(|| vec![]);
+    let todos = use_state_eq(|| -> Vec<Todo> { vec![] });
     let current = use_navigation();
 
-    let onKeyCenter = || {
-        let currentElement = document()
+    let on_key_center = || {
+        let current_element = document()
             .query_selector("[nav-selected=true]")
             .expect("Nothing currently selected")
-            .unwrap();
+            .unwrap()
+            .dyn_into::<HtmlInputElement>()
+            .expect("Wasn't an input element");
 
-        let currentNavigationIndex = currentElement
+        let current_navigation_index = current_element
             .get_attribute("nav-index")
             .expect("No attribute `nav-index`")
-            .parse::<u32>()
+            .parse::<usize>()
             .expect("`nav-index` couldn't be parsed to a number");
 
-        let isATask = currentNavigationIndex > 0;
-        if isATask {
-            todos.set(|prevState| {
-                let current = vec![..prevState];
-                current[currentNavigationIndex - 1].completed =
-                    !current[currentNavigationIndex - 1].completed;
-                return current;
+        let is_a_task = current_navigation_index > 0;
+        if is_a_task {
+            Callback::from(|_| {
+                let current = *todos.clone();
+                current[current_navigation_index - 1].completed =
+                    !current[current_navigation_index - 1].completed;
+                todos.set(current);
             });
-        } else if currentElement.value.length {
-            let toDo = Todo {
-                name: currentElement.value,
+        } else if current_element.value().len() > 0 {
+            let todo = Todo {
+                name: current_element.value(),
                 completed: false,
             };
-            todos.set(|prevState| vec![..prevState, toDo]);
-            currentElement.value = "";
+            Callback::from(|_| todos.push(todo));
+            current_element.set_value("");
         }
     };
 
-    let onKeyRight = || {
-        let currentIndex = document
-            .querySelector("[nav-selected=true]")
-            .getAttribute("nav-index")
+    let on_key_right = || {
+        let current_index = document()
+            .query_selector("[nav-selected=true]")
+            .expect("Nothing currently selected")
+            .unwrap()
+            .get_attribute("nav-index")
             .expect("No element `nav-index`")
-            .parse::<u32>();
-        if currentIndex > 0 {
-            todos.set(|prevState| {
-                let current = vec![..prevState];
-                current.splice(currentIndex - 1, 1);
-                let goToPreviousElement = current.length as bool;
-                current.set(if goToPreviousElement {
-                    currentIndex - 1
+            .parse::<usize>()
+            .expect("`nav-index` couldn't be parsed to a number");
+
+        if current_index > 0 {
+            Callback::from(|_| {
+                let cur = *todos.clone();
+                cur.remove(current_index - 1);
+                let go_to_previous_element = cur.len() != 0;
+                current.set(if go_to_previous_element {
+                    current_index - 1
                 } else {
                     0
                 });
-                return current;
+                todos.set(cur);
             });
         }
     };
@@ -69,13 +78,13 @@ pub fn app() -> Html {
       <Header title="ToDo List" />
 
       <Input type="text" label="New task" />
-      <ToDos toDos={toDos} />
+      <ToDos {todos} />
 
       <Softkey
       center={if         *current.type == "INPUT" { "Insert" } else { "Toggle"} }
-        onKeyCenter={onKeyCenter}
-        right={if         current.type === "SPAN" { "Delete" } else { ""} }
-        onKeyRight={onKeyRight}
+        {on_key_center}
+        right={if         *current.type == "SPAN" { "Delete" } else { ""} }
+        {on_key_right}
       />
     </>
     }

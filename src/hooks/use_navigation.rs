@@ -1,8 +1,8 @@
-use std::ops::Deref;
-
 use gloo_utils::{body, document};
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, HtmlElement, NodeList};
+use web_sys::{Element, HtmlElement, Node, NodeList};
+use yew::html::onkeydown::Event;
 use yew::prelude::*;
 
 #[derive(Default)]
@@ -28,7 +28,9 @@ struct NavigationState {
 }
 
 pub fn use_navigation() -> UseStateHandle<NavigationState> {
-    let current = use_state(|| NavigationState::default());
+    fn current() -> UseStateHandle<NavigationState> {
+        use_state(|| NavigationState::default())
+    }
 
     fn get_all_elements() -> NodeList {
         document()
@@ -36,7 +38,7 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
             .expect("No elements")
     }
 
-    let select_element = |maybe_element: Option<&Element>, set_index: u32| {
+    fn select_element(maybe_element: Option<&Node>, set_index: u32) {
         if let Some(element) = maybe_element {
             let elements = get_all_elements();
             for index in 0..elements.length() {
@@ -47,7 +49,7 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
                     .expect("Wasn't an Element");
 
                 let select_this_element = el;
-                el.set_attribute("nav-selected", (&**el == element).to_string().as_str());
+                el.set_attribute("nav-selected", (&***el == element).to_string().as_str());
                 el.set_attribute("nav-index", index.to_string().as_str());
                 // Was originally as below, unsure of intention
                 // if select_this_element {
@@ -60,18 +62,29 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
                     }
                 }
             }
-            current.set(NavigationState {
-                ntype: element.tag_name().try_into().unwrap(),
+            current().set(NavigationState {
+                ntype: element
+                    .dyn_ref::<Element>()
+                    .expect("Wasn't an Element")
+                    .tag_name()
+                    .try_into()
+                    .unwrap(),
                 index: set_index,
             });
         } else {
             set_navigation(0);
         }
-    };
+    }
 
-    let set_navigation = |index: u32| {
-        select_element(get_all_elements().get(index).unwrap_or(**body()));
-    };
+    fn set_navigation(index: u32) {
+        select_element(
+            get_all_elements()
+                .get(index)
+                .or_else(|| Some(**body()))
+                .as_ref(),
+            0,
+        );
+    }
 
     let get_the_index_of_the_selected_element = || {
         if let Ok(Some(element)) = document().query_selector("[nav-selected=true]") {
@@ -84,15 +97,15 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
         }
     };
 
-    let on_keydown = |evt| {
-        if evt.key != "ArrowDown" && evt.key != "ArrowUp" {
+    let on_keydown = Closure::new(|evt: Event| {
+        if evt.key() != "ArrowDown" && evt.key() != "ArrowUp" {
             return;
         }
 
         let all_elements = get_all_elements();
         let current_index = get_the_index_of_the_selected_element();
 
-        let set_index = match evt.key {
+        let set_index = match evt.key().as_str() {
             "ArrowDown" => {
                 let go_to_first_element = current_index + 1 > all_elements.length() - 1;
                 Some(if go_to_first_element {
@@ -113,9 +126,14 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
         };
 
         if let Some(index) = set_index {
-            return select_element(all_elements.get(index).or(all_elements.get(0)), index);
+            select_element(
+                all_elements.get(index).or(all_elements.get(0)).as_ref(),
+                index,
+            );
         }
-    };
+    })
+    .as_ref()
+    .unchecked_ref();
 
     use_effect(|| {
         document().add_event_listener_with_callback("keydown", on_keydown);
@@ -125,5 +143,5 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
         || document().remove_event_listener_with_callback("keydown", on_keydown)
     });
 
-    current
+    current()
 }
