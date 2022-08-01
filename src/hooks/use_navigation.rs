@@ -27,65 +27,65 @@ struct NavigationState {
     index: u32,
 }
 
-pub fn use_navigation() -> UseStateHandle<NavigationState> {
-    fn current() -> UseStateHandle<NavigationState> {
-        use_state(|| NavigationState::default())
-    }
+fn current() -> UseStateHandle<NavigationState> {
+    use_state(|| NavigationState::default())
+}
 
-    fn get_all_elements() -> NodeList {
-        document()
-            .query_selector_all("[nav-selectable]")
-            .expect("No elements")
-    }
+fn get_all_elements() -> NodeList {
+    document()
+        .query_selector_all("[nav-selectable]")
+        .expect("No elements")
+}
 
-    fn select_element(maybe_element: Option<&Node>, set_index: u32) {
-        if let Some(element) = maybe_element {
-            let elements = get_all_elements();
-            for index in 0..elements.length() {
-                let el = elements
-                    .get(index)
-                    .expect(&format!("Couldn't find element {}", index))
-                    .dyn_ref::<HtmlElement>()
-                    .expect("Wasn't an Element");
+fn select_element(maybe_element: Option<&Node>, set_index: u32) {
+    if let Some(element) = maybe_element {
+        let elements = get_all_elements();
+        for index in 0..elements.length() {
+            let el = elements
+                .get(index)
+                .expect(&format!("Couldn't find element {}", index))
+                .dyn_ref::<HtmlElement>()
+                .expect("Wasn't an Element");
 
-                let select_this_element = el;
-                el.set_attribute("nav-selected", (&***el == element).to_string().as_str());
-                el.set_attribute("nav-index", index.to_string().as_str());
-                // Was originally as below, unsure of intention
-                // if select_this_element {
-                if true {
-                    select_this_element.scroll_into_view();
-                    if el.node_name() == "INPUT" {
-                        el.focus();
-                    } else {
-                        el.blur();
-                    }
+            let select_this_element = el;
+            el.set_attribute("nav-selected", (&***el == element).to_string().as_str());
+            el.set_attribute("nav-index", index.to_string().as_str());
+            // Was originally as below, unsure of intention
+            // if select_this_element {
+            if true {
+                select_this_element.scroll_into_view();
+                if el.node_name() == "INPUT" {
+                    el.focus();
+                } else {
+                    el.blur();
                 }
             }
-            current().set(NavigationState {
-                ntype: element
-                    .dyn_ref::<Element>()
-                    .expect("Wasn't an Element")
-                    .tag_name()
-                    .try_into()
-                    .unwrap(),
-                index: set_index,
-            });
-        } else {
-            set_navigation(0);
         }
+        current().set(NavigationState {
+            ntype: element
+                .dyn_ref::<Element>()
+                .expect("Wasn't an Element")
+                .tag_name()
+                .try_into()
+                .unwrap(),
+            index: set_index,
+        });
+    } else {
+        set_navigation(0);
     }
+}
 
-    fn set_navigation(index: u32) {
-        select_element(
-            get_all_elements()
-                .get(index)
-                .or_else(|| Some(**body()))
-                .as_ref(),
-            0,
-        );
-    }
+pub fn set_navigation(index: u32) {
+    select_element(
+        get_all_elements()
+            .get(index)
+            .or_else(|| Some(**body()))
+            .as_ref(),
+        0,
+    );
+}
 
+pub fn use_navigation() -> UseStateHandle<NavigationState> {
     let get_the_index_of_the_selected_element = || {
         if let Ok(Some(element)) = document().query_selector("[nav-selected=true]") {
             element

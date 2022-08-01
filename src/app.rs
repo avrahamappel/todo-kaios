@@ -3,7 +3,7 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use crate::hooks::use_navigation;
+use crate::hooks;
 
 #[derive(PartialEq)]
 struct Todo {
@@ -14,7 +14,7 @@ struct Todo {
 #[function_component(App)]
 pub fn app() -> Html {
     let todos = use_state_eq(|| -> Vec<Todo> { vec![] });
-    let current = use_navigation();
+    let current = hooks::use_navigation();
 
     let on_key_center = || {
         let current_element = document()
@@ -63,8 +63,8 @@ pub fn app() -> Html {
                 let cur = *todos.clone();
                 cur.remove(current_index - 1);
                 let go_to_previous_element = cur.len() != 0;
-                current.set(if go_to_previous_element {
-                    current_index - 1
+                hooks::set_navigation(if go_to_previous_element {
+                    (current_index - 1) as u32
                 } else {
                     0
                 });
