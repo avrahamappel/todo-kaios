@@ -23,7 +23,7 @@ impl TryFrom<String> for NavigationType {
 
 #[derive(Default)]
 struct NavigationState {
-    ntype: NavigationType,
+    pub ntype: String,
     index: u32,
 }
 
@@ -140,7 +140,9 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
 
         set_navigation(0);
 
-        || document().remove_event_listener_with_callback("keydown", on_keydown)
+        || {
+            document().remove_event_listener_with_callback("keydown", on_keydown);
+        }
     });
 
     current()

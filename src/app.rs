@@ -81,9 +81,9 @@ pub fn app() -> Html {
       <ToDos {todos} />
 
       <Softkey
-      center={if         *current.type == "INPUT" { "Insert" } else { "Toggle"} }
+        center={if current.ntype == "INPUT" { "Insert" } else { "Toggle"} }
         {on_key_center}
-        right={if         *current.type == "SPAN" { "Delete" } else { ""} }
+        right={if current.ntype == "SPAN" { "Delete" } else { ""} }
         {on_key_right}
       />
     </>
