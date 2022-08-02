@@ -44,11 +44,11 @@ fn select_element(maybe_element: Option<&Node>, set_index: u32) {
             let el = elements
                 .get(index)
                 .expect(&format!("Couldn't find element {}", index))
-                .dyn_ref::<HtmlElement>()
+                .dyn_into::<HtmlElement>()
                 .expect("Wasn't an Element");
 
-            let select_this_element = el;
-            el.set_attribute("nav-selected", (&***el == element).to_string().as_str());
+            let select_this_element = &el;
+            el.set_attribute("nav-selected", (&**el == element).to_string().as_str());
             el.set_attribute("nav-index", index.to_string().as_str());
             // Was originally as below, unsure of intention
             // if select_this_element {
@@ -86,21 +86,21 @@ pub fn set_navigation(index: u32) {
 }
 
 pub fn use_navigation() -> UseStateHandle<NavigationState> {
-    let get_the_index_of_the_selected_element = || {
-        if let Ok(Some(element)) = document().query_selector("[nav-selected=true]") {
-            element
-                .get_attribute("nav-index")
-                .map(|a| a.parse::<u32>().unwrap_or(0))
-                .unwrap_or(0)
-        } else {
-            0
-        }
-    };
-
-    let on_keydown = Closure::new(|evt: Event| {
+    let on_keydown = Closure::new::<Box<dyn FnMut(Event)>>(Box::new(|evt| {
         if evt.key() != "ArrowDown" && evt.key() != "ArrowUp" {
             return;
         }
+
+        let get_the_index_of_the_selected_element = || {
+            if let Ok(Some(element)) = document().query_selector("[nav-selected=true]") {
+                element
+                    .get_attribute("nav-index")
+                    .map(|a| a.parse::<u32>().unwrap_or(0))
+                    .unwrap_or(0)
+            } else {
+                0
+            }
+        };
 
         let all_elements = get_all_elements();
         let current_index = get_the_index_of_the_selected_element();
@@ -131,17 +131,18 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
                 index,
             );
         }
-    })
-    .as_ref()
-    .unchecked_ref();
+    }));
 
-    use_effect(|| {
-        document().add_event_listener_with_callback("keydown", on_keydown);
+    use_effect(move || {
+        document().add_event_listener_with_callback("keydown", on_keydown.as_ref().unchecked_ref());
 
         set_navigation(0);
 
-        || {
-            document().remove_event_listener_with_callback("keydown", on_keydown);
+        move || {
+            document().remove_event_listener_with_callback(
+                "keydown",
+                on_keydown.as_ref().unchecked_ref(),
+            );
         }
     });
 
