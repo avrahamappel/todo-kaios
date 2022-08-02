@@ -3,20 +3,16 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
+use crate::components::{Header, Input, SoftKey, Todos};
 use crate::hooks;
-
-#[derive(PartialEq)]
-struct Todo {
-    name: String,
-    completed: bool,
-}
+use crate::todo::Todo;
 
 #[function_component(App)]
 pub fn app() -> Html {
     let todos = use_state_eq(|| -> Vec<Todo> { vec![] });
     let current = hooks::use_navigation();
 
-    let on_key_center = || {
+    let on_key_center = Box::new(|| {
         let current_element = document()
             .query_selector("[nav-selected=true]")
             .expect("Nothing currently selected")
@@ -46,9 +42,9 @@ pub fn app() -> Html {
             Callback::from(|_| todos.push(todo));
             current_element.set_value("");
         }
-    };
+    });
 
-    let on_key_right = || {
+    let on_key_right = Box::new(|| {
         let current_index = document()
             .query_selector("[nav-selected=true]")
             .expect("Nothing currently selected")
@@ -71,21 +67,21 @@ pub fn app() -> Html {
                 todos.set(cur);
             });
         }
-    };
+    });
 
     html! {
-         <>
-      <Header title="ToDo List" />
+        <>
+            <Header title="ToDo List" />
 
-      <Input type="text" label="New task" />
-      <ToDos {todos} />
+            <Input itype="text" label="New task" />
+            <Todos todos={*todos} />
 
-      <Softkey
-        center={if current.ntype == "INPUT" { "Insert" } else { "Toggle"} }
-        {on_key_center}
-        right={if current.ntype == "SPAN" { "Delete" } else { ""} }
-        {on_key_right}
-      />
-    </>
+            <SoftKey
+                center={if current.ntype == "INPUT" { "Insert" } else { "Toggle"} }
+                {on_key_center}
+                right={if current.ntype == "SPAN" { "Delete" } else { ""} }
+                {on_key_right}
+            />
+        </>
     }
 }
