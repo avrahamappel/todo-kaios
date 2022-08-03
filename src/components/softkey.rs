@@ -34,9 +34,9 @@ pub fn softkey(props: &Props) -> Html {
     let handle_keydown =
         Closure::new::<Box<dyn FnMut(KeyboardEvent)>>(Box::new(move |evt| {
             match evt.key().as_ref() {
-                "SoftLeft" => on_key_left.emit(evt),
+                "SoftLeft" | "Control" => on_key_left.emit(evt),
                 "Enter" => on_key_center.emit(evt),
-                "SoftRight" => on_key_right.emit(evt),
+                "SoftRight" | "Alt" => on_key_right.emit(evt),
                 _ => {}
             }
         }));
