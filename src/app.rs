@@ -4,79 +4,104 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
 use crate::components::{Header, Input, SoftKey, Todos};
-use crate::hooks;
-use crate::todo::Todo;
+use crate::todo::{self, Todo};
+
+enum TodosAction {
+    Toggle(usize),
+    Add(String),
+    Remove(usize),
+}
+
+#[derive(PartialEq)]
+struct TodosState {
+    todos: Vec<Todo>,
+}
+
+impl TodosState {
+    fn load() -> Self {
+        let todos = todo::sample_todos().into();
+        Self { todos }
+    }
+}
+
+impl Reducible for TodosState {
+    type Action = TodosAction;
+
+    fn reduce(self: std::rc::Rc<Self>, action: Self::Action) -> std::rc::Rc<Self> {
+        let mut todos = self.todos.clone();
+        todos = match action {
+            TodosAction::Toggle(index) => {
+                if let Some(todo) = todos.get_mut(index) {
+                    todo.completed = !todo.completed
+                }
+                todos
+            }
+            TodosAction::Add(name) => {
+                todos.push(Todo::new(name));
+                todos
+            }
+            TodosAction::Remove(index) => {
+                todos.remove(index);
+                todos
+            }
+        };
+
+        Self { todos }.into()
+    }
+}
 
 #[function_component(App)]
 pub fn app() -> Html {
-    let todos = use_state_eq(|| -> Vec<Todo> { vec![] });
-    let current = hooks::use_navigation();
+    let state = use_reducer_eq(TodosState::load);
+    let todos = &state.todos;
+    let index_state = use_state_eq(|| 0);
+    let index = *index_state;
 
-    let on_key_center = Callback::from(move |_| {
-        let current_element = document()
-            .query_selector("[nav-selected=true]")
-            .expect("Nothing currently selected")
-            .unwrap()
-            .dyn_into::<HtmlInputElement>()
-            .expect("Wasn't an input element");
+    let softkey = if todos.get(index).is_some() {
+        let on_key_center = {
+            let state = state.clone();
+            Callback::from(move |_| state.dispatch(TodosAction::Toggle(index)))
+        };
 
-        let current_navigation_index = current_element
-            .get_attribute("nav-index")
-            .expect("No attribute `nav-index`")
-            .parse::<usize>()
-            .expect("`nav-index` couldn't be parsed to a number");
+        let on_key_right = {
+            let state = state.clone();
+            Callback::from(move |_| state.dispatch(TodosAction::Remove(index)))
+        };
 
-        let is_a_task = current_navigation_index > 0;
-        if is_a_task {
-            current[current_navigation_index - 1].completed =
-                !current[current_navigation_index - 1].completed;
-            todos.set(current);
-        } else if current_element.value().len() > 0 {
-            let todo = Todo {
-                name: current_element.value(),
-                completed: false,
-            };
-            todos.push(todo);
-            current_element.set_value("");
+        html! {
+            <SoftKey center={"Toggle"} {on_key_center} right={"Delete"} {on_key_right} />
         }
-    });
+    } else {
+        let on_key_center = {
+            let state = state.clone();
+            Callback::from(move |_| {
+                let current_element = document()
+                    .query_selector("[nav-selected=true]")
+                    .expect("Nothing currently selected")
+                    .unwrap()
+                    .dyn_into::<HtmlInputElement>()
+                    .expect("Wasn't an input element");
 
-    let on_key_right = Callback::from(move |_| {
-        let current_index = document()
-            .query_selector("[nav-selected=true]")
-            .expect("Nothing currently selected")
-            .unwrap()
-            .get_attribute("nav-index")
-            .expect("No element `nav-index`")
-            .parse::<usize>()
-            .expect("`nav-index` couldn't be parsed to a number");
+                if current_element.value().len() > 0 {
+                    state.dispatch(TodosAction::Add(current_element.value()));
+                    current_element.set_value("");
+                }
+            })
+        };
 
-        if current_index > 0 {
-            let cur = *todos.clone();
-            cur.remove(current_index - 1);
-            let go_to_previous_element = cur.len() != 0;
-            hooks::set_navigation(if go_to_previous_element {
-                (current_index - 1) as u32
-            } else {
-                0
-            });
-            todos.set(cur);
+        html! {
+            <SoftKey center={ "Insert" } {on_key_center} />
         }
-    });
+    };
 
     html! {
         <>
             <Header title="ToDo List" />
 
             <Input itype="text" label="New task" />
-            <Todos todos={*todos} />
+            <Todos todos={todos.clone()} current_index={index} />
 
-            <SoftKey
-                center={if current.ntype == "INPUT" { "Insert" } else { "Toggle"} }
-                {on_key_center}
-                right={if current.ntype == "SPAN" { "Delete" } else { ""} }
-                {on_key_right}
-            />
+            {softkey}
         </>
     }
 }
