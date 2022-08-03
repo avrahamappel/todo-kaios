@@ -25,7 +25,7 @@ pub fn todos(
                 (*current_index == index).then_some("selected")
             );
             html! {
-                <span class={classes} key={index}>{todo.name}</span>
+                <span class={classes} key={index}>{todo.name.as_str()}</span>
             }
         })
         .collect();

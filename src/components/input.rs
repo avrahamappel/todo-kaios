@@ -8,11 +8,11 @@ pub struct Props {
 }
 
 #[function_component(Input)]
-pub fn input(props: &Props) -> Html {
+pub fn input(Props { itype, label }: &Props) -> Html {
     html! {
         <div class="input">
-            <input type={props.itype} nav-selectable="true" />
-            <label>{props.label}</label>
+            <input type={itype.clone()} nav-selectable="true" />
+            <label>{label}</label>
         </div>
     }
 }

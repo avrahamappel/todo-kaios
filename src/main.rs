@@ -2,7 +2,7 @@ use app::App;
 
 mod app;
 mod components;
-mod hooks;
+// mod hooks;
 mod todo;
 
 fn main() {

@@ -6,10 +6,10 @@ pub struct Props {
 }
 
 #[function_component(Header)]
-pub fn header(props: &Props) -> Html {
+pub fn header(Props { title }: &Props) -> Html {
     html! {
         <header class="header">
-            <span>{props.title}</span>
+            <span>{title.as_str()}</span>
         </header>
     }
 }
