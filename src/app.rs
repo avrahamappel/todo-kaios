@@ -82,7 +82,7 @@ pub fn app() -> Html {
                     .dyn_into::<HtmlInputElement>()
                     .expect("Wasn't an input element");
 
-                if current_element.value().len() > 0 {
+                if !current_element.value().is_empty() {
                     state.dispatch(TodosAction::Add(current_element.value()));
                     current_element.set_value("");
                 }

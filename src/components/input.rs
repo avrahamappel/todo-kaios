@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use yew::virtual_dom::AttrValue;
 
-#[derive(PartialEq, Properties)]
+#[derive(PartialEq, Eq, Properties)]
 pub struct Props {
     pub itype: AttrValue,
     pub label: String,
