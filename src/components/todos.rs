@@ -5,27 +5,22 @@ use crate::todo::Todo;
 #[derive(PartialEq, Properties)]
 pub struct Props {
     pub todos: Vec<Todo>,
-    pub current_index: usize,
+    pub maybe_index: Option<usize>,
 }
 
 #[function_component(Todos)]
-pub fn todos(
-    Props {
-        todos,
-        current_index,
-    }: &Props,
-) -> Html {
+pub fn todos(Props { todos, maybe_index }: &Props) -> Html {
     let todos: Html = todos
         .iter()
         .enumerate()
-        .map(|(index, todo)| {
+        .map(|(i, todo)| {
             let classes = classes!(
                 "todo",
                 todo.completed.then_some("completed"),
-                (*current_index == index).then_some("selected")
+                maybe_index.and_then(|index| (index == i).then_some("selected"))
             );
             html! {
-                <span class={classes} key={index}>{todo.name.as_str()}</span>
+                <span class={classes} key={i}>{todo.name.as_str()}</span>
             }
         })
         .collect();

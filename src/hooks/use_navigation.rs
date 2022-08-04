@@ -75,22 +75,20 @@ fn select_element(maybe_element: Option<&Node>, set_index: u32) {
     }
 }
 
-pub fn set_navigation(index: u32) {
-    select_element(
-        get_all_elements()
-            .get(index)
-            .or_else(|| Some(**body()))
-            .as_ref(),
-        0,
-    );
-}
+// pub fn set_navigation(index: u32) {
+//     select_element(
+//         get_all_elements()
+//             .get(index)
+//             .or_else(|| Some(**body()))
+//             .as_ref(),
+//         0,
+//     );
+// }
 
-pub fn use_navigation() -> UseStateHandle<NavigationState> {
-    let on_keydown = Closure::new::<Box<dyn FnMut(Event)>>(Box::new(|evt| {
-        if evt.key() != "ArrowDown" && evt.key() != "ArrowUp" {
-            return;
-        }
+pub fn use_navigation() -> UseStateHandle<usize> {
+    let index = use_state_eq(|| 0);
 
+    let on_keydown = Closure::new::<Box<dyn FnMut(KeyboardEvent)>>(Box::new(|evt| {
         let get_the_index_of_the_selected_element = || {
             if let Ok(Some(element)) = document().query_selector("[nav-selected=true]") {
                 element
@@ -136,8 +134,6 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
     use_effect(move || {
         document().add_event_listener_with_callback("keydown", on_keydown.as_ref().unchecked_ref());
 
-        set_navigation(0);
-
         move || {
             document().remove_event_listener_with_callback(
                 "keydown",
@@ -146,5 +142,5 @@ pub fn use_navigation() -> UseStateHandle<NavigationState> {
         }
     });
 
-    current()
+    index
 }
