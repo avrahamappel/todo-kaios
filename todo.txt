@@ -1,9 +1,0 @@
-- Try running in device
-- Refactor:
-    - Convert App component to struct
-    - Run clippy
-    - Replace unwraps and expects with real error handling
-- Rework UX
-- Store data locally
-- Pull data from endpoint
-- Push data to endpoint
