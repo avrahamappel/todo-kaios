@@ -1,11 +1,17 @@
 { pkgs ? import <nixpkgs> { } }:
-
+let
+  inherit (pkgs.stdenv.hostPlatform) isDarwin;
+  kaiosNixEnv = pkgs.callPackage ./.nix { };
+  firefox = pkgs.callPackage .nix/firefox.nix { };
+  firefoxMac = pkgs.writeShellScriptBin "firefox" ''
+    open ${firefox}/Applications/Firefox-KaiOS.app
+  '';
+in
 pkgs.mkShell
 {
   buildInputs = [
-    pkgs.androidenv.androidPkgs_9_0.platform-tools
     pkgs.cargo
-    # pkgs.firefox
     pkgs.trunk
-  ];
+    kaiosNixEnv.package
+  ] ++ (if isDarwin then [ firefoxMac ] else [ ]);
 }
