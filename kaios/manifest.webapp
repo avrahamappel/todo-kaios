@@ -1,0 +1,12 @@
+{
+    "version": "0.0.1",
+    "name": "Todos KaiOS",
+    "description": "A simple Todo app, written in Rust/WASM",
+    "icons": {
+        "56": "/resources/icon-56.png"
+    },
+    "developer": {
+        "name": "Avraham Appel",
+        "url": "https://github.com/avrahamappel"
+    }
+}
