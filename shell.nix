@@ -10,6 +10,7 @@ in
 pkgs.mkShell
 {
   buildInputs = [
+    pkgs.glibc
     pkgs.cargo
     pkgs.trunk
     kaiosNixEnv.package
