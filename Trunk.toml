@@ -1,0 +1,3 @@
+[[hooks]]
+stage = post_build
+command = build_for_kaios25.sh
