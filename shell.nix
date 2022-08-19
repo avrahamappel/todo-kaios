@@ -12,6 +12,7 @@ pkgs.mkShell
   buildInputs = with pkgs; [
     binaryen
     python3
+    trunk
     kaiosNixEnv.package
   ] ++ (if isDarwin then [ firefoxMac ] else [ ]);
 }
