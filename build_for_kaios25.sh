@@ -4,22 +4,55 @@
 
 function run () {
     echo "> $*"
+    # shellcheck disable=SC2068
     $@
 }
+
+WASM_JS_FILE=""
+WRAPPER_JS_FILE=""
 
 # Convert WASM to JS
 for w in "$TRUNK_STAGING_DIR"/*_bg.wasm
 do
-    run wasm2js "$w" -o "$w.js"
+    WASM_JS_FILE="$w.js"
+    # Compile the WASM to JS
+    echo "Compiling WASM to JS for older platforms..."
+    run wasm2js "$w" -o "$WASM_JS_FILE" --emscripten
+
+    echo "Bundling es5 code..."
+    # Compile the WASM-JS to es5
+    run rollup --environment "$TRUNK_PROFILE" --generatedCode es2015 \
+        -i "$WASM_JS_FILE" -o "$WASM_JS_FILE" &
+    # Compile the wrapper JS to es5
     wrapper="${w%_bg.wasm}.js"
-    # TODO we will probably need a config for this as CLI options don't seem to do the trick
-    # TODO is "debug" a valid env for rollup?
-    # TODO compile for kaios 2.5 browser which is actually the point here
-    run rollup --environment "$TRUNK_PROFILE" -i "$w.js" -i "$wrapper" --entryFileNames "[name].es5.js"
+    WRAPPER_JS_FILE="$wrapper.wrapper.js" 
+    run rollup --environment "$TRUNK_PROFILE" --generatedCode es2015 \
+        -i "$wrapper" -o "$WRAPPER_JS_FILE" &
+
+    # Wait for everything to be done
+    wait
+    echo "Bundling complete"
 done
 
-# Still have to do this,but should be shim script and scripts above added as nomodule scripts in the source html file
-# define my scripts
-# get heade of file (prob until last line)
-# inject my scripts
-# add back last line
+echo "Injecting es5 scripts..."
+
+# Define scripts
+# shellcheck disable=SC2295
+wasm_file_url="${WASM_JS_FILE#$TRUNK_STAGING_DIR}"
+# shellcheck disable=SC2295
+wrapper_file_url="${WRAPPER_JS_FILE#$TRUNK_STAGING_DIR}"
+scripts=$(cat <<HTML
+<script nomodule src="$wasm_file_url"></script>
+<script nomodule src="$wrapper_file_url"></script>
+<script nomodule src="/wasm-shim.js"></script>
+HTML
+)
+
+# Get file parts
+html_file="$TRUNK_STAGING_DIR"/index.html
+html_head=$(head -n -1 "$html_file")
+html_tail=$(tail -n 1 "$html_file")
+
+# Inject scripts
+{ echo "$html_head"; echo "$scripts"; echo "$html_tail"; } > "$html_file"
+echo "Done"
