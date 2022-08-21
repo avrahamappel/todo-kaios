@@ -15,23 +15,15 @@ WRAPPER_JS_FILE=""
 for w in "$TRUNK_STAGING_DIR"/*_bg.wasm
 do
     WASM_JS_FILE="$w.js"
-    # Compile the WASM to JS
+
     echo "Compiling WASM to JS for older platforms..."
-    run wasm2js "$w" -o "$WASM_JS_FILE" --emscripten
+    run wasm2js --emscripten "$w" -o "$WASM_JS_FILE"
 
     echo "Bundling es5 code..."
-    # Compile the WASM-JS to es5
-    run rollup --environment "$TRUNK_PROFILE" --generatedCode es2015 \
-        -i "$WASM_JS_FILE" -o "$WASM_JS_FILE" &
-    # Compile the wrapper JS to es5
     wrapper="${w%_bg.wasm}.js"
-    WRAPPER_JS_FILE="$wrapper.wrapper.js" 
+    WRAPPER_JS_FILE="${w%_bg.wasm}.wrapper.js" 
     run rollup --environment "$TRUNK_PROFILE" --generatedCode es2015 \
-        -i "$wrapper" -o "$WRAPPER_JS_FILE" &
-
-    # Wait for everything to be done
-    wait
-    echo "Bundling complete"
+        -i "$wrapper" -o "$WRAPPER_JS_FILE"
 done
 
 echo "Injecting es5 scripts..."
