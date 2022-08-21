@@ -11,6 +11,7 @@ pkgs.mkShell
 {
   buildInputs = with pkgs; [
     binaryen
+    nodePackages.rollup
     python3
     trunk
     kaiosNixEnv.package
