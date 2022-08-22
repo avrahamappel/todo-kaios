@@ -11,8 +11,7 @@ pkgs.mkShell
 {
   buildInputs = with pkgs; [
     binaryen
-    nodePackages.rollup
-    python3
+    nodejs
     trunk
     kaiosNixEnv.package
   ] ++ (if isDarwin then [ firefoxMac ] else [ ]);
